@@ -84,7 +84,7 @@
                 gisInited = true;
             } catch (err) { authStatus.textContent = "Error: Invalid Client ID."; }
         }
-        signInButton.addEventListener('click', () => { if (gapiInited && gisInited) { tokenClient.requestAccessToken({ prompt: 'consent' }); } });
+        signInButton.addEventListener('click', () => { if (gapiInited && gisInited) { tokenClient.requestAccessToken(); } });
         signOutButton.addEventListener('click', () => { const token = gapi.client.getToken(); if (token !== null) { google.accounts.oauth2.revoke(token.access_token, () => { gapi.client.setToken(''); updateUiForSignIn(false); }); } });
         function updateUiForSignIn(isSignedIn) {
             signInButton.classList.toggle('hidden', isSignedIn); signOutButton.classList.toggle('hidden', !isSignedIn);
