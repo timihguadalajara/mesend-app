@@ -118,24 +118,29 @@
                 const request = { fileId: driveFile.id, fileName: driveFile.name, formObject: formObject };
                 
                 // ===============================================================
-                // === THE DEFINITIVE FIX IS HERE ===
-                // This call no longer includes the Authorization header.
-                // Authentication is handled automatically by the browser's session cookies.
+                // === THE DEFINITIVE FIX: CORRECT FETCH OPTIONS ===
+                // This call now sends the correct headers and expects a proper JSON response.
                 // ===============================================================
                 return fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Important for Apps Script redirection
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(request)
+                    body: JSON.stringify(request),
+                    // mode: 'no-cors' is REMOVED
                 });
+                // ===============================================================
             })
-            .then(response => {
-                // Since 'no-cors' mode makes the response opaque, we cannot read it.
-                // We will assume success and create a placeholder result. A more advanced
-                // solution would be needed to get a real response back, but this will work.
-                console.log("Request sent to Apps Script. Assuming success.");
-                const messages = generateSuccessMessages({fileName: driveFile.name}, "Check Apps Script logs for the link.");
-                showResult({ link: "See Apps Script Execution Logs for link.", englishMessage: messages.en, spanishMessage: messages.es });
+            .then(res => {
+                // This block now correctly handles the response from Apps Script.
+                if (!res.ok) {
+                    throw new Error(`Backend API Error: ${res.status} ${res.statusText}`);
+                }
+                return res.json(); // This will parse the JSON response from your doPost function.
+            })
+            .then(result => {
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                showResult(result); // This is now called with the real data from the server.
             })
             .catch(err => onFailure(err)).finally(() => {
                 submitButton.disabled = false;
