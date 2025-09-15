@@ -83,7 +83,6 @@
                     callback: (tokenResponse) => { if (tokenResponse && tokenResponse.access_token) { gapi.client.setToken(tokenResponse); updateUiForSignIn(true); } },
                 });
                 gisInited = true;
-                tokenClient.requestAccessToken({ prompt: 'none' });
             } catch (err) { authStatus.textContent = "Error: Invalid Client ID."; }
         }
         signInButton.addEventListener('click', () => { if (gapiInited && gisInited) { tokenClient.requestAccessToken(); } });
