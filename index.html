@@ -74,8 +74,12 @@
             const gisScript = document.createElement('script'); gisScript.src = 'https://accounts.google.com/gsi/client'; gisScript.onload = initializeGisClient; document.head.appendChild(gisScript);
         })();
 
-        // --- 3. AUTHENTICATION LOGIC ---
-        async function initializeGapiClient() { await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS }); gapiInited = true; }
+         // --- 3. AUTHENTICATION LOGIC ---
+        async function initializeGapiClient() {
+            await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS });
+            gapiInited = true;
+            trySilentSignIn(); // Attempt silent sign-in when GAPI is ready
+        }
         function initializeGisClient() {
             try {
                 tokenClient = google.accounts.oauth2.initTokenClient({
@@ -83,17 +87,26 @@
                     callback: (tokenResponse) => { if (tokenResponse && tokenResponse.access_token) { gapi.client.setToken(tokenResponse); updateUiForSignIn(true); } },
                 });
                 gisInited = true;
-                tokenClient.requestAccessToken({ prompt: 'none' });
+                trySilentSignIn(); // Attempt silent sign-in when GIS is ready
             } catch (err) { authStatus.textContent = "Error: Invalid Client ID."; }
         }
+
+        // THE DEFINITIVE FIX: This function acts as a gatekeeper.
+        // It only attempts the silent sign-in when BOTH libraries are ready.
+        function trySilentSignIn() {
+            if (gapiInited && gisInited) {
+                tokenClient.requestAccessToken({ prompt: 'none' });
+            }
+        }
+        
         signInButton.addEventListener('click', () => { if (gapiInited && gisInited) { tokenClient.requestAccessToken(); } });
         signOutButton.addEventListener('click', () => { const token = gapi.client.getToken(); if (token !== null) { google.accounts.oauth2.revoke(token.access_token, () => { gapi.client.setToken(''); updateUiForSignIn(false); }); } });
+        
         function updateUiForSignIn(isSignedIn) {
             signInButton.classList.toggle('hidden', isSignedIn); signOutButton.classList.toggle('hidden', !isSignedIn);
             document.getElementById('formFields').disabled = !isSignedIn;
             authStatus.textContent = isSignedIn ? 'You are signed in.' : 'Please sign in to continue.';
         }
-
         // --- 4. UPLOAD LOGIC (REDIRECT ARCHITECTURE) ---
         uploadForm.addEventListener('submit', (e) => {
             e.preventDefault(); const file = fileInput.files[0]; if (!file) { alert('Please select a file.'); return; }
